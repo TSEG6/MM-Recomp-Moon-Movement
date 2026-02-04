@@ -287,31 +287,31 @@ void MoonEyeGlow(EnFall* moon, PlayState* play) {
     f32 glow = 0.0f;
     f32 t;
 
-    /* Dusk: 17:00 → 19:00 */
+    // Dusk: 17:00 → 19:00
     if ((time >= CLOCK_TIME(17, 0)) && (time < CLOCK_TIME(19, 0))) {
         t = (float)(time - CLOCK_TIME(17, 0)) / (CLOCK_TIME(19, 0) - CLOCK_TIME(17, 0));
         t = CLAMP(t, 0.0f, 1.0f);
-        glow = t;  // 0 → 1
+        glow = t;
     }
-    /* Night: 19:00 → 04:00 (wraps past midnight) */
+    // Night: 19:00 → 04:00
     else if ((time >= CLOCK_TIME(19, 0)) || (time < CLOCK_TIME(4, 0))) {
         glow = 1.0f;
     }
-    /* Dawn: 04:00 → 06:00 */
+    // Dawn: 04:00 → 06:00
     else if ((time >= CLOCK_TIME(4, 0)) && (time < CLOCK_TIME(6, 0))) {
         t = (float)(time - CLOCK_TIME(4, 0)) / (CLOCK_TIME(6, 0) - CLOCK_TIME(4, 0));
         t = CLAMP(t, 0.0f, 1.0f);
-        glow = 1.0f - t;  // 1 → 0
+        glow = 1.0f - t; 
     }
-    /* Daytime: 06:00 → 17:00 */
+    // Daytime: 06:00 → 17:00
     else {
         glow = 0.0f;
     }
 
-    /* Apply strength scaling */
+    // Apply scaling
     glow *= (float)glowingEyesStrength;
 
-    /* Smooth the transition to avoid bouncing */
+    // Smooth transition
     sMoonEyeGlow += (glow - sMoonEyeGlow) * 0.1f;
     moon->eyeGlowIntensity = sMoonEyeGlow;
 }
