@@ -114,7 +114,7 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
 
 
     u16 currentTime = CURRENT_TIME;
-    u16 dayStartTime = CLOCK_TIME(6, 0);
+    u16 dayStartTime = CLOCK_TIME(6, 1);
 
     float dayProgress = (currentTime < dayStartTime)
         ? 1.0f - ((float)(dayStartTime - currentTime) / 65536.0f)
