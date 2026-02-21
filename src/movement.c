@@ -8,7 +8,6 @@
 
 Actor* EnFall_MoonsTear_GetTerminaFieldMoon(PlayState* play);
 
-
 struct {
     EnFall* this;
     PlayState* play;
@@ -24,7 +23,6 @@ struct {
     PlayState* play;
 } EnFall_MoonSetup_Args;
 
-
 float g_moonStartY = 1000.0f;
 float g_moonBaseScale = 1.0f;
 Vec3f g_moonStartPos = { 0.0f, 0.0f, 0.0f }; // I had the moon going in a circle at one point because it was funny
@@ -39,8 +37,6 @@ void hasenteredfileselect() {
 
 
 }
-
-
 
 RECOMP_HOOK("Sram_SetFlashPagesOwlSave")
 void hasenteredtitlescreenagain() {
@@ -76,15 +72,14 @@ void EnFall_CrashingMoon_StoreScaleHook(EnFall* this, PlayState* play) {
     }
 }
 
-
 void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play) {
     if (!EnFall_CrashingMoon_IsMoonType(this)) return;
 
     bool hasOcarina = (INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_OF_TIME);
     double firstCycleUse = recomp_get_config_double("first_cycle_use");
+    u16 currentTime = CURRENT_TIME;
 
-
-    if (play->sceneId == SCENE_OKUJOU || play->csCtx.state != CS_STATE_IDLE || CURRENT_DAY == 0 || CURRENT_DAY == 4) {
+    if (play->sceneId == SCENE_OKUJOU || CURRENT_DAY == 0 || CURRENT_DAY == 4) {
         
         return;
     }
@@ -105,21 +100,30 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
 
     }
 
-
     if (!hasOcarina && firstCycleUse == 1.0 &&(CURRENT_DAY == 1 || CURRENT_DAY == 2)) {
         
         return;
 
     }
 
-
-    u16 currentTime = CURRENT_TIME;
     u16 dayStartTime = CLOCK_TIME(6, 1);
+    u16 dayEndTime = CLOCK_TIME(5, 59);
 
-    float dayProgress = (currentTime < dayStartTime)
-        ? 1.0f - ((float)(dayStartTime - currentTime) / 65536.0f)
-        : ((float)(currentTime - dayStartTime) / 65536.0f);
+    float dayLength;
+    float timeIntoDay;
 
+    if (currentTime >= dayStartTime) {
+        timeIntoDay = currentTime - dayStartTime;
+    }
+    else {
+        timeIntoDay = (0x10000 - dayStartTime) + currentTime;
+    }
+
+    dayLength = (dayEndTime >= dayStartTime)
+        ? (dayEndTime - dayStartTime)
+        : ((0x10000 - dayStartTime) + dayEndTime);
+
+    float dayProgress = timeIntoDay / dayLength;
     dayProgress = CLAMP(dayProgress, 0.0f, 1.0f);
 
     float totalProgress = ((CURRENT_DAY - 1) + dayProgress) / 3.0f;
@@ -139,7 +143,6 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
 
     this->actor.world.pos.x = g_moonStartPos.x;
     this->actor.world.pos.z = g_moonStartPos.z;
-
 
 }
 
@@ -263,14 +266,13 @@ void EnFall_Moon_AdjustScaleAndPositionHookReturn() {
     );
 }
 
-
 static f32 sMoonEyeGlow = 0.0f;
 
-RECOMP_HOOK("EnFall_Update")
+RECOMP_HOOK("EnFall_Update") // Glowing Eyes Stuff
 void MoonEyeGlow(EnFall* moon, PlayState* play) {
 
     double glowingEyes = recomp_get_config_double("glowing_eyes");
-    double glowingEyesStrength = recomp_get_config_double("glowing_eyes_intensity"); // 0 → 1
+    double glowingEyesStrength = recomp_get_config_double("glowing_eyes_intensity"); 
 
     if (play->sceneId == SCENE_OKUJOU || play->csCtx.state != CS_STATE_IDLE) {
 
@@ -287,31 +289,44 @@ void MoonEyeGlow(EnFall* moon, PlayState* play) {
     f32 glow = 0.0f;
     f32 t;
 
-    /* Dusk: 17:00 → 19:00 */
     if ((time >= CLOCK_TIME(17, 0)) && (time < CLOCK_TIME(19, 0))) {
         t = (float)(time - CLOCK_TIME(17, 0)) / (CLOCK_TIME(19, 0) - CLOCK_TIME(17, 0));
         t = CLAMP(t, 0.0f, 1.0f);
-        glow = t;  // 0 → 1
+        glow = t;  
     }
-    /* Night: 19:00 → 04:00 (wraps past midnight) */
+    
     else if ((time >= CLOCK_TIME(19, 0)) || (time < CLOCK_TIME(4, 0))) {
         glow = 1.0f;
     }
-    /* Dawn: 04:00 → 06:00 */
+
     else if ((time >= CLOCK_TIME(4, 0)) && (time < CLOCK_TIME(6, 0))) {
         t = (float)(time - CLOCK_TIME(4, 0)) / (CLOCK_TIME(6, 0) - CLOCK_TIME(4, 0));
         t = CLAMP(t, 0.0f, 1.0f);
-        glow = 1.0f - t;  // 1 → 0
+        glow = 1.0f - t;  
     }
-    /* Daytime: 06:00 → 17:00 */
+    
     else {
         glow = 0.0f;
     }
-
-    /* Apply strength scaling */
+    
     glow *= (float)glowingEyesStrength;
 
-    /* Smooth the transition to avoid bouncing */
     sMoonEyeGlow += (glow - sMoonEyeGlow) * 0.1f;
     moon->eyeGlowIntensity = sMoonEyeGlow;
+}
+
+// Moon day transition fix (I hate that this works to fix the issue)
+
+RECOMP_HOOK("EnTest4_HandleDayNightSwap")
+void jankfix() {
+
+    g_moonOverrideActive = true;
+
+}
+
+RECOMP_HOOK("Player_Update")
+void jankfixpart2() {
+
+    g_moonOverrideActive = false;
+
 }
