@@ -27,6 +27,7 @@ float g_moonStartY = 1000.0f;
 float g_moonBaseScale = 1.0f;
 Vec3f g_moonStartPos = { 0.0f, 0.0f, 0.0f }; // I had the moon going in a circle at one point because it was funny
 bool g_moonOverrideActive = false;
+bool titlescreen = true;
 
 RECOMP_HOOK ("FileSelect_FadeOut")
 void hasenteredfileselect() {
@@ -34,6 +35,7 @@ void hasenteredfileselect() {
     PlayState* play = EnFall_MoonSetup_Args.play;
 
         g_moonOverrideActive = true;
+        titlescreen = false;
 
 
 }
@@ -44,6 +46,7 @@ void hasenteredtitlescreenagain() {
     PlayState* play = EnFall_MoonSetup_Args.play;
 
     g_moonOverrideActive = false;
+    titlescreen = true;
 
 
 }
@@ -327,6 +330,10 @@ void jankfix() {
 RECOMP_HOOK("Player_Update")
 void jankfixpart2() {
 
-    g_moonOverrideActive = true;
+    if (!titlescreen) {
+
+        g_moonOverrideActive = true;
+
+    }
 
 }
