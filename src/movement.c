@@ -315,18 +315,18 @@ void MoonEyeGlow(EnFall* moon, PlayState* play) {
     moon->eyeGlowIntensity = sMoonEyeGlow;
 }
 
-// Moon day transition fix (I hate that this works to fix the issue)
+// Moon day transition fix (I hate that this works to fix the issue) (actually fixed now lol)
 
-RECOMP_HOOK("EnTest4_HandleDayNightSwap")
+RECOMP_HOOK("Sram_IncrementDay")
 void jankfix() {
 
-    g_moonOverrideActive = true;
+    g_moonOverrideActive = false;
 
 }
 
 RECOMP_HOOK("Player_Update")
 void jankfixpart2() {
 
-    g_moonOverrideActive = false;
+    g_moonOverrideActive = true;
 
 }
