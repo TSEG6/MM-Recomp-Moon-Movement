@@ -88,19 +88,15 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
     }
 
     if (play->csCtx.state != 0) {
-
-        return;
-
+        if (!(play->sceneId == SCENE_10YUKIYAMANOMURA2 || play->sceneId == SCENE_21MITURINMAE || play->sceneId == SCENE_IKANAMAE)) {
+            return;
+        }
     }
 
     if (!g_moonOverrideActive){
     
 
         return;
-    }
-    else {
-
-
     }
 
     if (!hasOcarina && firstCycleUse == 1.0 &&(CURRENT_DAY == 1 || CURRENT_DAY == 2)) {
