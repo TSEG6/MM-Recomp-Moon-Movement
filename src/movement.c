@@ -105,6 +105,12 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
 
     }
 
+    if (AudioSeq_GetActiveSeqId(SEQ_PLAYER_BGM_MAIN) == NA_BGM_GATHERING_GIANTS) {
+
+        return;
+
+    }
+
     u16 dayStartTime = CLOCK_TIME(6, 1);
     u16 dayEndTime = CLOCK_TIME(5, 59);
 
