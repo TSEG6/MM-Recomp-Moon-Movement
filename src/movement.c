@@ -23,10 +23,10 @@ struct {
     PlayState* play;
 } EnFall_MoonSetup_Args;
 
-float g_moonStartY = 1000.0f;
-float g_moonBaseScale = 1.0f;
-Vec3f g_moonStartPos = { 0.0f, 0.0f, 0.0f }; // I had the moon going in a circle at one point because it was funny
-bool g_moonOverrideActive = false;
+float moonStartY = 1000.0f;
+float moonBaseScale = 1.0f;
+Vec3f moonStartPos = { 0.0f, 0.0f, 0.0f }; // I had the moon going in a circle at one point because it was funny (maybe I'll add it as a feature later)
+bool moonOverrideActive = false;
 bool titlescreen = true;
 
 RECOMP_HOOK ("FileSelect_FadeOut")
@@ -34,10 +34,8 @@ void hasenteredfileselect() {
 
     PlayState* play = EnFall_MoonSetup_Args.play;
 
-        g_moonOverrideActive = true;
-        titlescreen = false;
-
-
+    moonOverrideActive = true;
+    titlescreen = false;
 }
 
 RECOMP_HOOK("Sram_SetFlashPagesOwlSave")
@@ -45,10 +43,8 @@ void hasenteredtitlescreenagain() {
 
     PlayState* play = EnFall_MoonSetup_Args.play;
 
-    g_moonOverrideActive = false;
+    moonOverrideActive = false;
     titlescreen = true;
-
-
 }
 
 bool EnFall_CrashingMoon_IsMoonType(EnFall* this) {
@@ -68,10 +64,11 @@ void EnFall_CrashingMoon_StoreScaleHook(EnFall* this, PlayState* play) {
     if (Object_IsLoaded(&play->objectCtx, this->objectSlot) &&
         EnFall_CrashingMoon_IsMoonType(this)) {
 
-        g_moonStartPos.x = this->actor.home.pos.x;
-        g_moonStartPos.z = this->actor.home.pos.z;
-        g_moonStartY = this->actor.home.pos.y;
-        g_moonBaseScale = this->scale;
+        moonStartPos.x = this->actor.home.pos.x;
+        moonStartPos.z = this->actor.home.pos.z;
+
+        moonStartY = this->actor.home.pos.y;
+        moonBaseScale = this->scale;
     }
 }
 
@@ -79,11 +76,13 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
     if (!EnFall_CrashingMoon_IsMoonType(this)) return;
 
     bool hasOcarina = (INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_OF_TIME);
-    double firstCycleUse = recomp_get_config_double("first_cycle_use");
+    double firstCycleUseC = recomp_get_config_double("first_cycle_use");
+    double moonScaleC = recomp_get_config_double("moon_scale");
+    double moonHeightC = recomp_get_config_double("moon_hstart");
+    double curvedMovementC = recomp_get_config_double("curved_growth");
     u16 currentTime = CURRENT_TIME;
 
     if (play->sceneId == SCENE_OKUJOU || CURRENT_DAY == 0 || CURRENT_DAY == 4) {
-        
         return;
     }
 
@@ -93,22 +92,16 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
         }
     }
 
-    if (!g_moonOverrideActive){
-    
-
+    if (!moonOverrideActive) {
         return;
     }
 
-    if (!hasOcarina && firstCycleUse == 1.0 &&(CURRENT_DAY == 1 || CURRENT_DAY == 2)) {
-        
+    if (!hasOcarina && firstCycleUseC == 1.0 && (CURRENT_DAY == 1 || CURRENT_DAY == 2)) {
         return;
-
     }
 
     if (AudioSeq_GetActiveSeqId(SEQ_PLAYER_BGM_MAIN) == NA_BGM_GATHERING_GIANTS) {
-
         return;
-
     }
 
     u16 dayStartTime = CLOCK_TIME(6, 1);
@@ -134,21 +127,37 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
     float totalProgress = ((CURRENT_DAY - 1) + dayProgress) / 3.0f;
     totalProgress = CLAMP(totalProgress, 0.0f, 1.0f);
 
-    float scaleFactor = g_moonBaseScale * (1.2f + (3.6f - 1.2f) * totalProgress);
+    float easedProgress = totalProgress;
+
+    // Curved based movement real???
+    if (curvedMovementC == 0.0) {
+        easedProgress = totalProgress * totalProgress;
+    }
+
+    float vanillaStartScale = moonBaseScale * 1.2f;
+    float vanillaEndScale = moonBaseScale * 3.6f;
+
+    float customStartScale = vanillaStartScale * (float)moonScaleC;
+
+    float scaleFactor = customStartScale + (vanillaEndScale - customStartScale) * easedProgress;
     Actor_SetScale(&this->actor, scaleFactor);
 
-    float yOffset = totalProgress * 6700.0f * g_moonBaseScale * 6.25f;
+    float vanillaTotalDistance = 6700.0f * moonBaseScale * 6.25f;
+    float vanillaEndY;
 
     if (EN_FALL_TYPE(&this->actor) == EN_FALL_TYPE_LODMOON_INVERTED_STONE_TOWER) {
-        this->actor.world.pos.y = g_moonStartY + yOffset;
+        vanillaEndY = moonStartY + vanillaTotalDistance;
     }
     else {
-        this->actor.world.pos.y = g_moonStartY - yOffset;
+        vanillaEndY = moonStartY - vanillaTotalDistance;
     }
 
-    this->actor.world.pos.x = g_moonStartPos.x;
-    this->actor.world.pos.z = g_moonStartPos.z;
+    float customStartY = moonStartY + (float)moonHeightC;
 
+    this->actor.world.pos.y = customStartY + (vanillaEndY - customStartY) * easedProgress;
+
+    this->actor.world.pos.x = moonStartPos.x;
+    this->actor.world.pos.z = moonStartPos.z;
 }
 
 // Darío's Crazy Moon hooks below (thanks btw)
@@ -325,17 +334,13 @@ void MoonEyeGlow(EnFall* moon, PlayState* play) {
 RECOMP_HOOK("Sram_IncrementDay")
 void jankfix() {
 
-    g_moonOverrideActive = false;
-
+    moonOverrideActive = false;
 }
 
 RECOMP_HOOK("Player_Update")
 void jankfixpart2() {
 
     if (!titlescreen) {
-
-        g_moonOverrideActive = true;
-
+        moonOverrideActive = true;
     }
-
 }

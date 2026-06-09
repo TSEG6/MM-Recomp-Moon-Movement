@@ -8,7 +8,7 @@
 id = "mm_recomp_moon_movement"
 
 # Version of this mod.
-version = "1.0.7"
+version = "1.1.0"
 
 # The name that will show up for this mod in the mod menu. This should be human readable.
 display_name = "Moon Movement"
@@ -70,16 +70,53 @@ additional_files = ["thumb.png"]
 [[manifest.config_options]]
 id = "first_cycle_use"
 name = "First Cycle"
-description = "Should the moon move on Days 1 and 2 first cycle?"
+description = """Should the moon move on Days 1 and 2 first cycle?
+(Default is False)"""
 type = "Enum"
 options = [ "True", "False" ]
 default = "False"
 
+[[manifest.config_options]]
+id = "curved_growth"
+name = "Curved Movement"
+description = """Should the moon use day based curved movement? 
+(Day 1 is 1/3 speed Day 2 is 2/3 speed and Day 3 is normal speed.)
+(Default is False)"""
+type = "Enum"
+options = [ "True", "False" ]
+default = "False"
+
+[[manifest.config_options]]
+id = "moon_scale"
+name = "Moon Starting Scale"
+description = """How large the moon starts off as. 
+(Default is 1)"""
+type = "Number"
+min = 0.05
+max = 2
+step = 0.05
+precision = 1
+percent = false
+default = 1
+
+[[manifest.config_options]]
+id = "moon_hstart"
+name = "Moon Starting Position"
+description = """How high the moon starts. 
+(Default is 1000)"""
+type = "Number"
+min = -1000
+max = 3000
+step = 10
+precision = 1
+percent = false
+default = 1000
 
 [[manifest.config_options]]
 id = "glowing_eyes"
-name = "Glowing Eyes"
-description = "Should the moon's eyes glow at night?"
+name = "Nightime Glowing Eyes"
+description = """Should the moon's eyes glow at night?
+(Default is False)"""
 type = "Enum"
 options = [ "True", "False" ]
 default = "False"
@@ -87,7 +124,8 @@ default = "False"
 [[manifest.config_options]]
 id = "glowing_eyes_intensity"
 name = "Glowing Eyes Intensity"
-description = "How strong the glow of the moon's eyes is. (default 1)"
+description = """How strong the glow of the moon's eyes is. 
+(Default is 1)"""
 type = "Number"
 min = 0
 max = 1
