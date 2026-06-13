@@ -76,11 +76,18 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
     if (!EnFall_CrashingMoon_IsMoonType(this)) return;
 
     bool hasOcarina = (INV_CONTENT(ITEM_OCARINA_OF_TIME) == ITEM_OCARINA_OF_TIME);
+    bool isInverted = (EN_FALL_TYPE(&this->actor) == EN_FALL_TYPE_LODMOON_INVERTED_STONE_TOWER);
+
     double firstCycleUseC = recomp_get_config_double("first_cycle_use");
     double moonScaleC = recomp_get_config_double("moon_scale");
     double moonHeightC = recomp_get_config_double("moon_hstart");
     double curvedMovementC = recomp_get_config_double("curved_growth");
+    double moonRotationC = recomp_get_config_double("moon_rotation");
+    double facingPlayerC = recomp_get_config_double("player_rotation");
+
     u16 currentTime = CURRENT_TIME;
+    s16 pitchOffset = 0;
+    s16 targetPitch = isInverted ? 0x7000 : -0x7000;
 
     if (play->sceneId == SCENE_OKUJOU || CURRENT_DAY == 0 || CURRENT_DAY == 4) {
         return;
@@ -129,7 +136,7 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
 
     float easedProgress = totalProgress;
 
-    // Curved based movement real???
+    // "Curved" based movement real???
     if (curvedMovementC == 0.0) {
         easedProgress = totalProgress * totalProgress;
     }
@@ -158,6 +165,40 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
 
     this->actor.world.pos.x = moonStartPos.x;
     this->actor.world.pos.z = moonStartPos.z;
+
+    // the horrors
+    if (facingPlayerC == 0.0) {
+        Player* player = GET_PLAYER(play);
+
+        s16 targetYaw = Math_Vec3f_Yaw(&this->actor.world.pos, &player->actor.world.pos);
+        s16 targetPitch = Math_Vec3f_Pitch(&this->actor.world.pos, &player->actor.world.pos);
+
+        Math_SmoothStepToS(&this->actor.shape.rot.y, targetYaw, 10, 0x1000, 0x10);
+        Math_SmoothStepToS(&this->actor.shape.rot.x, targetPitch, 10, 0x1000, 0x10);
+    }
+    else {
+        if (moonRotationC != 1.0) {
+            float rotationProgress = 1.0f;
+
+            if (CURRENT_DAY == 1) {
+                u16 startRotTime = CLOCK_TIME(6, 0);
+                u16 endRotTime = CLOCK_TIME(18, 0);
+
+                if (currentTime >= startRotTime && currentTime <= endRotTime) {
+                    rotationProgress = (float)(currentTime - startRotTime) / (float)(endRotTime - startRotTime);
+                }
+                else if (currentTime < startRotTime) {
+                    rotationProgress = 0.0f;
+                }
+            }
+
+            pitchOffset = (s16)(targetPitch * (1.0f - rotationProgress));
+        }
+
+        s16 defaultPitch = this->actor.home.rot.x + pitchOffset;
+        Math_SmoothStepToS(&this->actor.shape.rot.x, defaultPitch, 10, 0x1000, 0x10);
+        Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.home.rot.y, 10, 0x1000, 0x10);
+    }
 }
 
 // Darío's Crazy Moon hooks below (thanks btw)
