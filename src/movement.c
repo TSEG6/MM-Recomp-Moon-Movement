@@ -28,6 +28,7 @@ float moonBaseScale = 1.0f;
 Vec3f moonStartPos = { 0.0f, 0.0f, 0.0f }; // I had the moon going in a circle at one point because it was funny (maybe I'll add it as a feature later)
 bool moonOverrideActive = false;
 bool titlescreen = true;
+bool moonFirstFrame = false;
 
 RECOMP_HOOK ("FileSelect_FadeOut")
 void hasenteredfileselect() {
@@ -83,11 +84,12 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
     double moonHeightC = recomp_get_config_double("moon_hstart");
     double curvedMovementC = recomp_get_config_double("curved_growth");
     double moonRotationC = recomp_get_config_double("moon_rotation");
+    double moonRotationEndC = recomp_get_config_double("moon_rotate_end");
     double facingPlayerC = recomp_get_config_double("player_rotation");
 
     u16 currentTime = CURRENT_TIME;
     s16 pitchOffset = 0;
-    s16 targetPitch = isInverted ? 0x7000 : -0x7000;
+    s32 targetPitch = isInverted ? 0x9000 : -0x9000;
 
     if (play->sceneId == SCENE_OKUJOU || CURRENT_DAY == 0 || CURRENT_DAY == 4) {
         return;
@@ -173,32 +175,47 @@ void EnFall_CrashingMoon_PerformActionsCommonHook(EnFall* this, PlayState* play)
         s16 targetYaw = Math_Vec3f_Yaw(&this->actor.world.pos, &player->actor.world.pos);
         s16 targetPitch = Math_Vec3f_Pitch(&this->actor.world.pos, &player->actor.world.pos);
 
-        Math_SmoothStepToS(&this->actor.shape.rot.y, targetYaw, 10, 0x1000, 0x10);
-        Math_SmoothStepToS(&this->actor.shape.rot.x, targetPitch, 10, 0x1000, 0x10);
+        if (moonFirstFrame) {
+            this->actor.shape.rot.y = targetYaw;
+            this->actor.shape.rot.x = targetPitch;
+        }
+        else {
+            Math_SmoothStepToS(&this->actor.shape.rot.y, targetYaw, 10, 0x1000, 0x10);
+            Math_SmoothStepToS(&this->actor.shape.rot.x, targetPitch, 10, 0x1000, 0x10);
+        }
     }
     else {
         if (moonRotationC != 1.0) {
             float rotationProgress = 1.0f;
+            int targetDay = (int)moonRotationEndC;
+            float currentOverallProgress = (CURRENT_DAY - 1) + dayProgress;
+            float targetOverallProgress = (targetDay - 1) + 0.5f;
 
-            if (CURRENT_DAY == 1) {
-                u16 startRotTime = CLOCK_TIME(6, 0);
-                u16 endRotTime = CLOCK_TIME(18, 0);
-
-                if (currentTime >= startRotTime && currentTime <= endRotTime) {
-                    rotationProgress = (float)(currentTime - startRotTime) / (float)(endRotTime - startRotTime);
-                }
-                else if (currentTime < startRotTime) {
-                    rotationProgress = 0.0f;
-                }
+            if (currentOverallProgress <= 0.0f) {
+                rotationProgress = 0.0f;
+            }
+            else if (currentOverallProgress >= targetOverallProgress) {
+                rotationProgress = 1.0f;
+            }
+            else {
+                rotationProgress = currentOverallProgress / targetOverallProgress;
             }
 
             pitchOffset = (s16)(targetPitch * (1.0f - rotationProgress));
         }
 
         s16 defaultPitch = this->actor.home.rot.x + pitchOffset;
-        Math_SmoothStepToS(&this->actor.shape.rot.x, defaultPitch, 10, 0x1000, 0x10);
-        Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.home.rot.y, 10, 0x1000, 0x10);
+
+        if (moonFirstFrame) {
+            this->actor.shape.rot.x = defaultPitch;
+            this->actor.shape.rot.y = this->actor.home.rot.y;
+        }
+        else {
+            Math_SmoothStepToS(&this->actor.shape.rot.x, defaultPitch, 10, 0x1000, 0x10);
+            Math_SmoothStepToS(&this->actor.shape.rot.y, this->actor.home.rot.y, 10, 0x1000, 0x10);
+        }
     }
+    moonFirstFrame = false;
 }
 
 // Darío's Crazy Moon hooks below (thanks btw)
@@ -216,7 +233,7 @@ void EnFall_SetupHookReturn() {
     EnFall* this = EnFall_MoonSetup_Args.this;
     PlayState* play = EnFall_MoonSetup_Args.play;
 
-
+    moonFirstFrame = true;
     EnFall_CrashingMoon_StoreScaleHook(this, play);
     EnFall_CrashingMoon_PerformActionsCommonHook(this, play);
 }
