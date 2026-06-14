@@ -8,7 +8,7 @@
 id = "mm_recomp_moon_movement"
 
 # Version of this mod.
-version = "1.1.0"
+version = "1.2.1"
 
 # The name that will show up for this mod in the mod menu. This should be human readable.
 display_name = "Moon Movement"
@@ -87,6 +87,47 @@ options = [ "True", "False" ]
 default = "False"
 
 [[manifest.config_options]]
+id = "moon_rotation"
+name = "Moon Rotation"
+description = """Should the moon rotate it's face into view? 
+(Default is False)"""
+type = "Enum"
+options = [ "True", "False" ]
+default = "False"
+
+[[manifest.config_options]]
+id = "player_rotation"
+name = "Facing Player"
+description = """Should the moon rotate to always face the player?
+(Takes priority over Moon Rotation)
+(Default is False)"""
+type = "Enum"
+options = [ "True", "False" ]
+default = "False"
+
+[[manifest.config_options]]
+id = "glowing_eyes"
+name = "Nightime Glowing Eyes"
+description = """Should the moon's eyes glow at night?
+(Default is False)"""
+type = "Enum"
+options = [ "True", "False" ]
+default = "False"
+
+[[manifest.config_options]]
+id = "moon_rotate_end"
+name = "Moon Rotation Finish"
+description = """What night should the rotation finish?
+(Default is 1)"""
+type = "Number"
+min = 1
+max = 3
+step = 1
+precision = 1
+percent = false
+default = 1
+
+[[manifest.config_options]]
 id = "moon_scale"
 name = "Moon Starting Scale"
 description = """How large the moon starts off as. 
@@ -111,15 +152,6 @@ step = 10
 precision = 1
 percent = false
 default = 1000
-
-[[manifest.config_options]]
-id = "glowing_eyes"
-name = "Nightime Glowing Eyes"
-description = """Should the moon's eyes glow at night?
-(Default is False)"""
-type = "Enum"
-options = [ "True", "False" ]
-default = "False"
 
 [[manifest.config_options]]
 id = "glowing_eyes_intensity"
